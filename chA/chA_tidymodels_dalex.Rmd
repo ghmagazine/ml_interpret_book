@@ -1,0 +1,145 @@
+---
+title: "付録A：Rによる分析例〜tidymodelsとDALEXで機械学習モデルを解釈する〜"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+```{r, message=FALSE}
+# 下記パッケージをインストールしていない場合はインストールしてください
+# install.packages(c("tidymodels", "DALEX", "ranger", "mlbench"))
+
+# 読み込み
+library(tidymodels)
+library(DALEX)
+
+# 乱数を固定
+set.seed(42)
+```
+
+```{r}
+# データを読み込み
+data(BostonHousing, package = "mlbench")
+```
+
+
+```{r}
+# 中身を確認
+BostonHousing %>% 
+  head()
+```
+
+```{r}
+# データ分割方法を指定
+# 訓練データとテストデータを8:2にする
+split <- initial_split(BostonHousing,  prop = 0.8)
+
+# 訓練データとテストデータに分割
+df_train <- training(split)
+df_test <- testing(split)
+```
+
+```{r}
+# モデルの作成
+# scikit-learnのデフォルトではmtryは特徴量の数と同じなので13にする
+model <- rand_forest(trees = 100, min_n = 1, mtry = 13) %>% 
+  set_engine(engine = "ranger", seed = 42) %>% 
+  set_mode(mode = "regression")
+
+# モデルの中身を確認
+model
+```
+
+```{r}
+# モデルの学習
+model_trained <- model %>%
+  fit(medv ~ ., data = df_train)
+
+# 学習済みモデルのを確認
+model_trained
+```
+
+```{r}
+# テストデータに対する予測
+df_result <- df_test %>% 
+  select(medv) %>% 
+  bind_cols(predict(model_trained, df_test))
+
+# 結果を確認
+df_result %>% 
+  head()
+```
+
+```{r}
+# 評価関数を作成
+evaluate_result <- metric_set(rmse, rsq)
+
+# 予測精度を評価
+df_result %>% 
+  evaluate_result(medv, .pred)
+```
+
+```{r}
+# explainerの作成
+explainer <- model_trained %>% 
+  explain(
+    data = df_test %>% select(-medv), # medv以外
+    y = df_test %>% pull(medv), # medvだけ
+    label = "Random Forest"
+  )
+```
+
+```{r}
+# PFIを計算
+pfi <- explainer %>% 
+  model_parts(
+    loss_function = loss_root_mean_square,
+    B = 10,
+    type = "difference"
+  )
+```
+
+```{r}
+# 可視化
+plot(pfi)
+```
+
+```{r}
+# PDを計算
+pd <-  explainer %>% 
+  model_profile(variables = "rm")
+
+# 可視化
+plot(pd)
+```
+
+```{r}
+# ICEを計算
+ice <- explainer %>% 
+  predict_profile(
+    new_observation = df_test, 
+    variables = "rm"
+  )
+
+# 可視化
+plot(ice, variables = "rm")
+```
+
+```{r}
+# SAHPを計算
+shap <- explainer %>% 
+  predict_parts(
+    new_observation = df_test %>% slice(1), # インスタンス1を抜き出す
+    type = "shap",
+    B = 25
+  )
+
+# 可視化
+plot(shap)
+```
+
+```{r}
+sessionInfo()
+```
