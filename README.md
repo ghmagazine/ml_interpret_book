@@ -19,6 +19,14 @@ https://gihyo.jp/book/2021/978-4-297-12226-3
 
 Pythonのバージョンは3.8を、パッケージの管理にはpoetryを利用しています。
 サンプルコードを`git clone`でダウンロードし、フォルダ直下で`poetry install`を実行すると、本書と同じ環境を構築することが出来ます。
+
+ ```
+ git clone https://github.com/ghmagazine/ml_interpret_book.git
+ cd ml_interpret_book
+ poetry env use python3.8
+ poetry install
+ ```
+
 本書の環境で利用しているPython及びパッケージのバージョンは以下になります。
 
 ```
