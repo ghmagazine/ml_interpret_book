@@ -283,7 +283,7 @@ class PartialDependence:
 
         
 class IndividualConditionalExpectation(PartialDependence):
-    """Indivudual Conditional Expectation"""
+    """Individual Conditional Expectation"""
 
     def individual_conditional_expectation(
         self, 
