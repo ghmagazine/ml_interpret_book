@@ -448,7 +448,7 @@ class ShapleyAdditiveExplanations:
         """
         
         # 特徴量jがない場合の組み合わせ
-        s = tuple(set(s_union_j) - set([j]))
+        s = tuple(sorted(set(s_union_j) - set([j])))
 
         # 組み合わせの数
         S = len(s)
